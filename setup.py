@@ -31,5 +31,6 @@ setup(
     zip_safe = False,
     install_requires = ['six>=1.9.0','requests>=2.7.0'],
     test_suite = 'pytest',
-    python_requires='>3.6.9'
+    python_requires='>3.6.9',
+    include_package_data=True
 )

@@ -1,2 +1,2 @@
-include versiontools_support.py
+include chef/bin/*
 include LICENSE
