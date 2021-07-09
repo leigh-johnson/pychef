@@ -24,14 +24,14 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up Python virtualenv
         run: |
-          make .venv
+          make .venv PYTHON_VERSION=python3.8
       # TODO
       # - name: MyPy
       #   run: |
       #     make mypy
       - name: Run tests & generate coverage report
         run: |
-          make test
+          make test PYTHON_VERSION=python3.8
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
