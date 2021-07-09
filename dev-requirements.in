@@ -1,5 +1,6 @@
 # dev-requirements.in
 -c requirements.txt
-pytest
-wheel
 pip-tools
+pytest
+pytest-cov
+wheel

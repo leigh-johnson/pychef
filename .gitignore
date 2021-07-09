@@ -1,9 +1,11 @@
 *.pyc
 *.egg-info
 .coverage
-htmlcov/*
 docs/_build/
 build
 dist
 .venv
 
+coverage.xml
+coverage.html
+coverage.json
