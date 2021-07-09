@@ -1,4 +1,4 @@
-from unittest2 import skip
+from unittest import skip
 
 from chef import Search, Node
 from chef.exceptions import ChefError

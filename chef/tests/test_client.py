@@ -1,4 +1,4 @@
-import unittest2
+import unittest
 
 from chef import Client
 from chef.tests import ChefTestCase

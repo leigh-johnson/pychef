@@ -1,4 +1,4 @@
-from unittest2 import TestCase, skip
+from unittest import TestCase, skip
 
 from chef import Node
 from chef.exceptions import ChefError

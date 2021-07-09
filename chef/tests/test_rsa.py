@@ -1,11 +1,11 @@
 import os
 
-import unittest2
+import unittest
 
 from chef.rsa import Key, SSLError
 from chef.tests import TEST_ROOT, skipSlowTest
 
-class RSATestCase(unittest2.TestCase):
+class RSATestCase(unittest.TestCase):
     def test_load_private(self):
         key = Key(os.path.join(TEST_ROOT, 'client.pem'))
         self.assertFalse(key.public)
