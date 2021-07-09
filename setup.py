@@ -10,6 +10,8 @@ setup(
     packages = find_packages(),
     author = 'Noah Kantrowitz',
     author_email = 'noah@coderanger.net',
+    maintainer = 'Leigh Johnson',
+    maintainer_email = 'leigh@bitsy.ai',
     description = 'Python implementation of a Chef API client.',
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     license = 'Apache 2.0',
