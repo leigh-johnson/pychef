@@ -35,6 +35,7 @@ pip-sync:
 
 .venv:
 	$(PYTHON_VERSION) -m venv $(VENV)
+	$(PIP) install pip-tools
 	$(PIP) install -r requirements.txt
 	$(PIP) install -r dev-requirements.txt
 

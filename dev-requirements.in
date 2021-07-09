@@ -1,7 +1,6 @@
 # dev-requirements.in
 -c requirements.txt
 bump2version
-pip-tools
 pytest
 pytest-cov
 wheel
