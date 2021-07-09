@@ -43,3 +43,6 @@ requirements.txt: requirements.in
 
 dev-requirements.txt: dev-requirements.in
 	$(VENV_BIN)/pip-compile --generate-hashes dev-requirements.in --output-file dev-requirements.txt
+
+test:
+	$(VENV_BIN)/pytest
