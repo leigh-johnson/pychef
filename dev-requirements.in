@@ -4,4 +4,6 @@ bump2version
 pytest
 pytest-cov
 pytest-mock
+tox 
+tox-gh-actions
 wheel

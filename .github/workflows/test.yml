@@ -17,21 +17,16 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: Set up Python virtualenv
+      - name: Install Tox
         run: |
-          make .venv PYTHON_VERSION=python3.8
-      # TODO
-      # - name: MyPy
-      #   run: |
-      #     make mypy
-      - name: Run tests & generate coverage report
-        run: |
-          make test PYTHON_VERSION=python3.8
+          make tox
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:

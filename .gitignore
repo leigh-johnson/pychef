@@ -9,3 +9,4 @@ dist
 coverage.xml
 coverage.html
 coverage.json
+.tox/

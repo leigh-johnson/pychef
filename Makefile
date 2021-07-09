@@ -47,3 +47,7 @@ dev-requirements.txt: dev-requirements.in
 
 test:
 	$(VENV_BIN)/pytest
+
+tox:
+	python3 -m pip install --upgrade pip
+	pip install tox tox-gh-actions
