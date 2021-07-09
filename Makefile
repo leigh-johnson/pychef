@@ -1,5 +1,3 @@
-
-
 DIST ?= dist/
 PIP ?= $(VENV_BIN)/pip
 PYTHON ?= $(VENV_BIN)/python
