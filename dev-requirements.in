@@ -3,4 +3,5 @@
 bump2version
 pytest
 pytest-cov
+pytest-mock
 wheel
