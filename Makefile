@@ -53,4 +53,4 @@ tox:
 	pip install tox tox-gh-actions
 
 lint:
-	$(VENV_BIN)/black chef
+	black chef
