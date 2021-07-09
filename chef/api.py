@@ -2,11 +2,14 @@ import datetime
 import logging
 import os
 import re
+import json
 import socket
 import subprocess
 import threading
 import weakref
 import six
+import subprocess
+from pathlib import Path
 
 import pkg_resources
 
@@ -15,8 +18,9 @@ import requests
 from chef.auth import sign_request
 from chef.exceptions import ChefServerError
 from chef.rsa import Key
-from chef.utils import json
+import chef.utils.json
 from chef.utils.file import walk_backwards
+import chef.bin
 
 api_stack = threading.local()
 log = logging.getLogger('chef.api')
@@ -138,7 +142,7 @@ class ChefAPI(object):
             script = config_ruby_script % path.replace('\\', '\\\\').replace("'", "\\'")
             out, err = proc.communicate(script.encode())
             if proc.returncode == 0 and out.strip():
-                data = json.loads(out.decode())
+                data = chef.utils.json.loads(out.decode())
                 log.debug('Ruby parse succeeded with %r', data)
                 url = data.get('chef_server_url')
                 client_name = data.get('node_name')
@@ -216,13 +220,55 @@ class ChefAPI(object):
         headers['accept'] = 'application/json'
         if data is not None:
             headers['content-type'] = 'application/json'
-            data = json.dumps(data)
+            data = chef.utils.json.dumps(data)
         response = self.request(method, path, headers, data)
         return response.json()
 
     def __getitem__(self, path):
         return self.api_request('GET', path)
 
+# ~/.chef/config.d/
+# %userprofile%\.chef\config.d\
+DEFAULT_CONFIG_PATH = os.path.join(
+    str(Path.home()),
+    '.chef',
+    'config.d'
+)
+
+class MissingConfig(Exception):
+    pass
+def autoconfigure_v2():
+    '''
+        Re-uses Chef's configuration parsing & merging logic instead of reimplementing in Python :)
+        See load_config_chef.utils.json.rb script for additional info
+        
+        Adds support for multiple configuration files from config.d directory.
+        All files that end in .rb in the .d directory are loaded; other non-.rb files are ignored.
+        
+        For example:
+        /etc/chef/config.d
+        ~/.chef/config.d/company_settings.rb
+        ~/.chef/config.d/ec2_configuration.rb
+        ~/.chef/config.d/old_settings.rb.bak
+        
+        The old_settings.rb.bak file is ignored because it’s not a configuration file. 
+        The config.rb, company_settings.rb, and ec2_configuration files are merged together as if they are a single configuration file.
+       
+        https://docs.chef.io/workstation/config_rb/#d-directories
+    '''
+    script = os.path.join(
+        os.path.dirname(chef.bin.__file__), 'load_config_chef.utils.json.rb'
+    )
+    stdout = subprocess.check_call(script)
+    config = json.loads(stdout)
+
+    chef_server_url = config.get('chef_server_url')
+    key = config.get('client_key')
+    ssl_verify_mode = config.get('ssl_verify_mode')
+    node_name = config.get('node_name')
+
+    ssl_verify = ssl_verify_mode != 'verify_none'
+    return ChefAPI(url=chef_server_url, key=key, client=node_name, ssl_verify=ssl_verify)
 
 def autoconfigure(base_path=None):
     """Try to find a knife or chef-client config file to load parameters from,
@@ -235,6 +281,7 @@ def autoconfigure(base_path=None):
     The first file that is found and can be loaded successfully will be loaded
     into a :class:`ChefAPI` object.
     """
+    log.warning('DEPRECATION NOTICE: chef.api.autoconfigure will be removed in a future version of Py3Chef. Please use chef.api.autoconfigure_v2 to fix this warning.')
     base_path = base_path or os.getcwd()
     # Scan up the tree for a knife.rb or client.rb. If that fails try looking
     # in /etc/chef. The /etc/chef check will never work in Win32, but it doesn't
