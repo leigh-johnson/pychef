@@ -4,6 +4,7 @@ import collections
 from chef.base import ChefObject
 from chef.exceptions import ChefError
 
+
 class NodeAttributes(collections.MutableMapping):
     """A collection of Chef :class:`~chef.Node` attributes.
 
@@ -53,11 +54,11 @@ class NodeAttributes(collections.MutableMapping):
                 # Structural mismatch
                 new_d = {}
             new_search_path.append(new_d)
-        return self.__class__(new_search_path, self.path+(key,), write=self.write)
+        return self.__class__(new_search_path, self.path + (key,), write=self.write)
 
     def __setitem__(self, key, value):
         if self.write is None:
-            raise ChefError('This attribute is not writable')
+            raise ChefError("This attribute is not writable")
         dest = self.write
         for path_key in self.path:
             dest = dest.setdefault(path_key, {})
@@ -65,7 +66,7 @@ class NodeAttributes(collections.MutableMapping):
 
     def __delitem__(self, key):
         if self.write is None:
-            raise ChefError('This attribute is not writable')
+            raise ChefError("This attribute is not writable")
         dest = self.write
         for path_key in self.path:
             dest = dest.setdefault(path_key, {})
@@ -95,7 +96,7 @@ class NodeAttributes(collections.MutableMapping):
             print node.attributes.get_dotted('apache.log_dir')
         """
         value = self
-        for k in key.split('.'):
+        for k in key.split("."):
             if not isinstance(value, NodeAttributes):
                 raise KeyError(key)
             value = value[k]
@@ -110,7 +111,7 @@ class NodeAttributes(collections.MutableMapping):
             node.attributes.set_dotted('apache.log_dir', '/srv/log')
         """
         dest = self
-        keys = key.split('.')
+        keys = key.split(".")
         last_key = keys.pop()
         for k in keys:
             if k not in dest:
@@ -189,18 +190,18 @@ class Node(ChefObject):
         precedence level.
     """
 
-    url = '/nodes'
+    url = "/nodes"
     attributes = {
-        'default': NodeAttributes,
-        'normal': lambda d: NodeAttributes(d, write=d),
-        'override': NodeAttributes,
-        'automatic': NodeAttributes,
-        'run_list': list,
-        'chef_environment': str
+        "default": NodeAttributes,
+        "normal": lambda d: NodeAttributes(d, write=d),
+        "override": NodeAttributes,
+        "automatic": NodeAttributes,
+        "run_list": list,
+        "chef_environment": str,
     }
 
     def has_key(self, key):
-      return self.attributes.has_dotted(key)
+        return self.attributes.has_dotted(key)
 
     def get(self, key, default=None):
         return self.attributes.get(key, default)
@@ -215,14 +216,19 @@ class Node(ChefObject):
         if not self.exists:
             # Make this exist so the normal<->attributes cross-link will
             # function correctly
-            data['normal'] = {}
-        data.setdefault('chef_environment', '_default')
+            data["normal"] = {}
+        data.setdefault("chef_environment", "_default")
         super(Node, self)._populate(data)
-        self.attributes = NodeAttributes((data.get('automatic', {}),
-                                          data.get('override', {}),
-                                          data['normal'], # Must exist, see above
-                                          data.get('default', {})), write=data['normal'])
+        self.attributes = NodeAttributes(
+            (
+                data.get("automatic", {}),
+                data.get("override", {}),
+                data["normal"],  # Must exist, see above
+                data.get("default", {}),
+            ),
+            write=data["normal"],
+        )
 
     def cookbooks(self, api=None):
         api = api or self.api
-        return api[self.url + '/cookbooks']
+        return api[self.url + "/cookbooks"]

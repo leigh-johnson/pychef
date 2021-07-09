@@ -23,7 +23,7 @@ from chef.utils.file import walk_backwards
 import chef.bin
 
 api_stack = threading.local()
-log = logging.getLogger('chef.api')
+log = logging.getLogger("chef.api")
 
 config_ruby_script = """
 require 'chef'
@@ -31,8 +31,9 @@ Chef::Config.from_file('%s')
 puts Chef::Config.configuration.to_json
 """.strip()
 
+
 def api_stack_value():
-    if not hasattr(api_stack, 'value'):
+    if not hasattr(api_stack, "value"):
         api_stack.value = []
     return api_stack.value
 
@@ -56,12 +57,12 @@ class ChefAPI(object):
                 n = Node('web1')
     """
 
-    ruby_value_re = re.compile(r'#\{([^}]+)\}')
-    env_value_re = re.compile(r'ENV\[(.+)\]')
+    ruby_value_re = re.compile(r"#\{([^}]+)\}")
+    env_value_re = re.compile(r"ENV\[(.+)\]")
     ruby_string_re = re.compile(r'^\s*(["\'])(.*?)\1\s*$')
 
-    def __init__(self, url, key, client, version='0.10.8', headers={}, ssl_verify=True):
-        self.url = url.rstrip('/')
+    def __init__(self, url, key, client, version="0.10.8", headers={}, ssl_verify=True):
+        self.url = url.rstrip("/")
         self.parsed_url = six.moves.urllib.parse.urlparse(self.url)
         if not isinstance(key, Key):
             key = Key(key)
@@ -72,7 +73,7 @@ class ChefAPI(object):
         self.version = version
         self.headers = dict((k.lower(), v) for k, v in six.iteritems(headers))
         self.version_parsed = pkg_resources.parse_version(self.version)
-        self.platform = self.parsed_url.hostname == 'api.opscode.com'
+        self.platform = self.parsed_url.hostname == "api.opscode.com"
         self.ssl_verify = ssl_verify
         if not api_stack_value():
             self.set_default()
@@ -90,75 +91,89 @@ class ChefAPI(object):
         url = key_path = client_name = None
         ssl_verify = True
         for line in open(path):
-            if not line.strip() or line.startswith('#'):
-                continue # Skip blanks and comments
+            if not line.strip() or line.startswith("#"):
+                continue  # Skip blanks and comments
             parts = line.split(None, 1)
             if len(parts) != 2:
-                continue # Not a simple key/value, we can't parse it anyway
+                continue  # Not a simple key/value, we can't parse it anyway
             key, value = parts
             md = cls.ruby_string_re.search(value)
             if md:
                 value = md.group(2)
-            elif key == 'ssl_verify_mode':
-                log.debug('Found ssl_verify_mode: %r', value)
-                ssl_verify = (value.strip() != ':verify_none')
-                log.debug('ssl_verify = %s', ssl_verify)
+            elif key == "ssl_verify_mode":
+                log.debug("Found ssl_verify_mode: %r", value)
+                ssl_verify = value.strip() != ":verify_none"
+                log.debug("ssl_verify = %s", ssl_verify)
             else:
                 # Not a string, don't even try
-                log.debug('Value for {0} does not look like a string: {1}'.format(key, value))
+                log.debug(
+                    "Value for {0} does not look like a string: {1}".format(key, value)
+                )
                 continue
+
             def _ruby_value(match):
                 expr = match.group(1).strip()
-                if expr == 'current_dir':
+                if expr == "current_dir":
                     return os.path.dirname(path)
                 envmatch = cls.env_value_re.match(expr)
                 if envmatch:
                     envmatch = envmatch.group(1).strip('"').strip("'")
-                    return os.environ.get(envmatch) or ''
+                    return os.environ.get(envmatch) or ""
                 log.debug('Unknown ruby expression in line "%s"', line)
                 raise UnknownRubyExpression
+
             try:
                 value = cls.ruby_value_re.sub(_ruby_value, value)
             except UnknownRubyExpression:
                 continue
-            if key == 'chef_server_url':
-                log.debug('Found URL: %r', value)
+            if key == "chef_server_url":
+                log.debug("Found URL: %r", value)
                 url = value
-            elif key == 'node_name':
-                log.debug('Found client name: %r', value)
+            elif key == "node_name":
+                log.debug("Found client name: %r", value)
                 client_name = value
-            elif key == 'client_key':
-                log.debug('Found key path: %r', value)
+            elif key == "client_key":
+                log.debug("Found key path: %r", value)
                 key_path = value
                 if not os.path.isabs(key_path):
                     # Relative paths are relative to the config file
-                    key_path = os.path.abspath(os.path.join(os.path.dirname(path), key_path))
+                    key_path = os.path.abspath(
+                        os.path.join(os.path.dirname(path), key_path)
+                    )
 
         if not (url and client_name and key_path):
             # No URL, no chance this was valid, try running Ruby
-            log.debug('No Chef server config found, trying Ruby parse')
+            log.debug("No Chef server config found, trying Ruby parse")
             url = key_path = client_name = None
-            proc = subprocess.Popen('ruby', stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            script = config_ruby_script % path.replace('\\', '\\\\').replace("'", "\\'")
+            proc = subprocess.Popen(
+                "ruby", stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            )
+            script = config_ruby_script % path.replace("\\", "\\\\").replace("'", "\\'")
             out, err = proc.communicate(script.encode())
             if proc.returncode == 0 and out.strip():
                 data = chef.utils.json.loads(out.decode())
-                log.debug('Ruby parse succeeded with %r', data)
-                url = data.get('chef_server_url')
-                client_name = data.get('node_name')
-                key_path = data.get('client_key')
+                log.debug("Ruby parse succeeded with %r", data)
+                url = data.get("chef_server_url")
+                client_name = data.get("node_name")
+                key_path = data.get("client_key")
                 if key_path and not os.path.isabs(key_path):
                     # Relative paths are relative to the config file
-                    key_path = os.path.abspath(os.path.join(os.path.dirname(path), key_path))
+                    key_path = os.path.abspath(
+                        os.path.join(os.path.dirname(path), key_path)
+                    )
             else:
-                log.debug('Ruby parse failed with exit code %s: %s', proc.returncode, out.strip())
+                log.debug(
+                    "Ruby parse failed with exit code %s: %s",
+                    proc.returncode,
+                    out.strip(),
+                )
         if not url:
             # Still no URL, can't use this config
-            log.debug('Still no Chef server URL found')
+            log.debug("Still no Chef server URL found")
             return
         if not key_path:
             # Try and use ./client.pem
-            key_path = os.path.join(os.path.dirname(path), 'client.pem')
+            key_path = os.path.join(os.path.dirname(path), "client.pem")
         if not os.path.isfile(key_path) or not os.access(key_path, os.R_OK):
             # Can't read the client key
             log.debug('Unable to read key file "%s"', key_path)
@@ -192,21 +207,32 @@ class ChefAPI(object):
         del api_stack_value()[-1]
 
     def _request(self, method, url, data, headers):
-        return requests.api.request(method, url, headers=headers, data=data, verify=self.ssl_verify)
+        return requests.api.request(
+            method, url, headers=headers, data=data, verify=self.ssl_verify
+        )
 
     def request(self, method, path, headers={}, data=None):
-        auth_headers = sign_request(key=self.key, http_method=method,
-            path=self.parsed_url.path+path.split('?', 1)[0], body=data,
-            host=self.parsed_url.netloc, timestamp=datetime.datetime.utcnow(),
-            user_id=self.client)
+        auth_headers = sign_request(
+            key=self.key,
+            http_method=method,
+            path=self.parsed_url.path + path.split("?", 1)[0],
+            body=data,
+            host=self.parsed_url.netloc,
+            timestamp=datetime.datetime.utcnow(),
+            user_id=self.client,
+        )
         request_headers = {}
         request_headers.update(self.headers)
         request_headers.update(dict((k.lower(), v) for k, v in six.iteritems(headers)))
-        request_headers['x-chef-version'] = self.version
+        request_headers["x-chef-version"] = self.version
         request_headers.update(auth_headers)
         try:
-            response = self._request(method, self.url + path, data, dict(
-                (k.capitalize(), v) for k, v in six.iteritems(request_headers)))
+            response = self._request(
+                method,
+                self.url + path,
+                data,
+                dict((k.capitalize(), v) for k, v in six.iteritems(request_headers)),
+            )
         except requests.ConnectionError as e:
             raise ChefServerError(e.message)
 
@@ -217,48 +243,52 @@ class ChefAPI(object):
 
     def api_request(self, method, path, headers={}, data=None):
         headers = dict((k.lower(), v) for k, v in six.iteritems(headers))
-        headers['accept'] = 'application/json'
+        headers["accept"] = "application/json"
         if data is not None:
-            headers['content-type'] = 'application/json'
+            headers["content-type"] = "application/json"
             data = chef.utils.json.dumps(data)
         response = self.request(method, path, headers, data)
         return response.json()
 
     def __getitem__(self, path):
-        return self.api_request('GET', path)
+        return self.api_request("GET", path)
+
 
 def autoconfigure_v2():
-    '''
-        Re-uses Chef's configuration parsing & merging logic instead of reimplementing in Python :)
-        See load_config_chef.utils.json.rb script for additional info
-        
-        Adds support for multiple configuration files from config.d directory.
-        All files that end in .rb in the .d directory are loaded; other non-.rb files are ignored.
-        
-        For example:
-        /etc/chef/config.d
-        ~/.chef/config.d/company_settings.rb
-        ~/.chef/config.d/ec2_configuration.rb
-        ~/.chef/config.d/old_settings.rb.bak
-        
-        The old_settings.rb.bak file is ignored because it’s not a configuration file. 
-        The config.rb, company_settings.rb, and ec2_configuration files are merged together as if they are a single configuration file.
-       
-        https://docs.chef.io/workstation/config_rb/#d-directories
-    '''
+    """
+    Re-uses Chef's configuration parsing & merging logic instead of reimplementing in Python :)
+    See load_config_chef.utils.json.rb script for additional info
+
+    Adds support for multiple configuration files from config.d directory.
+    All files that end in .rb in the .d directory are loaded; other non-.rb files are ignored.
+
+    For example:
+    /etc/chef/config.d
+    ~/.chef/config.d/company_settings.rb
+    ~/.chef/config.d/ec2_configuration.rb
+    ~/.chef/config.d/old_settings.rb.bak
+
+    The old_settings.rb.bak file is ignored because it’s not a configuration file.
+    The config.rb, company_settings.rb, and ec2_configuration files are merged together as if they are a single configuration file.
+
+    https://docs.chef.io/workstation/config_rb/#d-directories
+    """
     script = os.path.join(
-        os.path.dirname(chef.bin.__file__), 'load_config_chef.utils.json.rb'
+        os.path.dirname(chef.bin.__file__), "load_config_chef.utils.json.rb"
     )
     stdout = subprocess.check_call(script)
     config = json.loads(stdout)
 
-    chef_server_url = config.get('chef_server_url')
-    key = config.get('client_key')
-    ssl_verify_mode = config.get('ssl_verify_mode')
-    node_name = config.get('node_name')
+    chef_server_url = config.get("chef_server_url")
+    key = config.get("client_key")
+    ssl_verify_mode = config.get("ssl_verify_mode")
+    node_name = config.get("node_name")
 
-    ssl_verify = ssl_verify_mode != 'verify_none'
-    return ChefAPI(url=chef_server_url, key=key, client=node_name, ssl_verify=ssl_verify)
+    ssl_verify = ssl_verify_mode != "verify_none"
+    return ChefAPI(
+        url=chef_server_url, key=key, client=node_name, ssl_verify=ssl_verify
+    )
+
 
 def autoconfigure(base_path=None):
     """Try to find a knife or chef-client config file to load parameters from,
@@ -271,25 +301,27 @@ def autoconfigure(base_path=None):
     The first file that is found and can be loaded successfully will be loaded
     into a :class:`ChefAPI` object.
     """
-    log.warning('DEPRECATION NOTICE: chef.api.autoconfigure will be removed in a future version of Py3Chef. Please use chef.api.autoconfigure_v2 to fix this warning.')
+    log.warning(
+        "DEPRECATION NOTICE: chef.api.autoconfigure will be removed in a future version of Py3Chef. Please use chef.api.autoconfigure_v2 to fix this warning."
+    )
     base_path = base_path or os.getcwd()
     # Scan up the tree for a knife.rb or client.rb. If that fails try looking
     # in /etc/chef. The /etc/chef check will never work in Win32, but it doesn't
     # hurt either.
     for path in walk_backwards(base_path):
-        config_path = os.path.join(path, '.chef', 'knife.rb')
+        config_path = os.path.join(path, ".chef", "knife.rb")
         api = ChefAPI.from_config_file(config_path)
         if api is not None:
             return api
 
     # The walk didn't work, try ~/.chef/knife.rb
-    config_path = os.path.expanduser(os.path.join('~', '.chef', 'knife.rb'))
+    config_path = os.path.expanduser(os.path.join("~", ".chef", "knife.rb"))
     api = ChefAPI.from_config_file(config_path)
     if api is not None:
         return api
 
     # Nothing in the home dir, try /etc/chef/client.rb
-    config_path = os.path.join(os.path.sep, 'etc', 'chef', 'client.rb')
+    config_path = os.path.join(os.path.sep, "etc", "chef", "client.rb")
     api = ChefAPI.from_config_file(config_path)
     if api is not None:
         return api

@@ -6,6 +6,7 @@ from chef.api import ChefAPI
 from chef.base import ChefObject, ChefQuery, ChefObjectMeta
 from chef.exceptions import ChefError, ChefServerNotFoundError
 
+
 class DataBagMeta(ChefObjectMeta, abc.ABCMeta):
     """A metaclass to allow DataBag to use multiple inheritance."""
 
@@ -23,7 +24,7 @@ class DataBag(six.with_metaclass(DataBagMeta, ChefObject, ChefQuery)):
             print item['qa_version']
     """
 
-    url = '/data'
+    url = "/data"
 
     def _populate(self, data):
         self.names = list(data.keys())
@@ -32,20 +33,24 @@ class DataBag(six.with_metaclass(DataBagMeta, ChefObject, ChefQuery)):
         return DataBagItem(self, name, api=api)
 
 
-class DataBagItem(six.with_metaclass(DataBagMeta, ChefObject, collections.MutableMapping)):
+class DataBagItem(
+    six.with_metaclass(DataBagMeta, ChefObject, collections.MutableMapping)
+):
     """A Chef data bag item object.
 
     Data bag items act as normal dicts and can contain arbitrary data.
     """
 
-    url = '/data'
+    url = "/data"
     attributes = {
-        'raw_data': dict,
+        "raw_data": dict,
     }
 
     def __init__(self, bag, name, api=None, skip_load=False):
         self._bag = bag
-        super(DataBagItem, self).__init__(str(bag)+'/'+name, api=api, skip_load=skip_load)
+        super(DataBagItem, self).__init__(
+            str(bag) + "/" + name, api=api, skip_load=skip_load
+        )
         self.name = name
 
     @property
@@ -57,21 +62,21 @@ class DataBagItem(six.with_metaclass(DataBagMeta, ChefObject, collections.Mutabl
 
     @classmethod
     def from_search(cls, data, api):
-        bag = data.get('data_bag')
+        bag = data.get("data_bag")
         if not bag:
-            raise ChefError('No data_bag key in data bag item information')
-        name = data.get('name')
+            raise ChefError("No data_bag key in data bag item information")
+        name = data.get("name")
         if not name:
-            raise ChefError('No name key in the data bag item information')
-        item = name[len('data_bag_item_' + bag + '_'):]
+            raise ChefError("No name key in the data bag item information")
+        item = name[len("data_bag_item_" + bag + "_") :]
         obj = cls(bag, item, api=api, skip_load=True)
         obj.exists = True
         obj._populate(data)
         return obj
 
     def _populate(self, data):
-        if 'json_class' in data:
-            self.raw_data = data['raw_data']
+        if "json_class" in data:
+            self.raw_data = data["raw_data"]
         else:
             self.raw_data = data
 
@@ -98,8 +103,8 @@ class DataBagItem(six.with_metaclass(DataBagMeta, ChefObject, collections.Mutabl
         obj = cls(bag, name, api, skip_load=True)
         for key, value in six.iteritems(kwargs):
             obj[key] = value
-        obj['id'] = name
-        api.api_request('POST', cls.url+'/'+str(bag), data=obj.raw_data)
+        obj["id"] = name
+        api.api_request("POST", cls.url + "/" + str(bag), data=obj.raw_data)
         if isinstance(bag, DataBag) and name not in bag.names:
             # Mutate the bag in-place if possible, so it will return the new
             # item instantly
@@ -111,8 +116,10 @@ class DataBagItem(six.with_metaclass(DataBagMeta, ChefObject, collections.Mutabl
         will be created.
         """
         api = api or self.api
-        self['id'] = self.name
+        self["id"] = self.name
         try:
-            api.api_request('PUT', self.url, data=self.raw_data)
+            api.api_request("PUT", self.url, data=self.raw_data)
         except ChefServerNotFoundError as e:
-            api.api_request('POST', self.__class__.url+'/'+str(self._bag), data=self.raw_data)
+            api.api_request(
+                "POST", self.__class__.url + "/" + str(self._bag), data=self.raw_data
+            )

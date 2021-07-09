@@ -13,26 +13,28 @@ except ImportError as e:
     task = lambda *args, **kwargs: lambda fn: fn
     roles = task
 
-__all__ = ['chef_roledefs', 'chef_environment', 'chef_query', 'chef_tags']
+__all__ = ["chef_roledefs", "chef_environment", "chef_query", "chef_tags"]
 
 # Default environment name
-DEFAULT_ENVIRONMENT = '_default'
+DEFAULT_ENVIRONMENT = "_default"
 
 # Default hostname attributes
-DEFAULT_HOSTNAME_ATTR = ['cloud.public_hostname', 'fqdn']
+DEFAULT_HOSTNAME_ATTR = ["cloud.public_hostname", "fqdn"]
 
 # Sentinel object to trigger defered lookup
 _default_environment = object()
 
+
 def _api(api):
     api = api or ChefAPI.get_global() or autoconfigure()
     if not api:
-        raise ChefError('Unable to load Chef API configuration')
+        raise ChefError("Unable to load Chef API configuration")
     return api
 
 
 class Roledef(object):
     """Represents a Fabric roledef for a Chef role."""
+
     def __init__(self, query, api, hostname_attr, environment=None):
         self.query = query
         self.api = api
@@ -45,10 +47,10 @@ class Roledef(object):
         query = self.query
         environment = self.environment
         if environment is _default_environment:
-            environment = env.get('chef_environment', DEFAULT_ENVIRONMENT)
+            environment = env.get("chef_environment", DEFAULT_ENVIRONMENT)
         if environment:
-            query += ' AND chef_environment:%s' % environment
-        for row in Search('node', query, api=self.api):
+            query += " AND chef_environment:%s" % environment
+        for row in Search("node", query, api=self.api):
             if row:
                 if callable(self.hostname_attr):
                     val = self.hostname_attr(row.object)
@@ -57,17 +59,24 @@ class Roledef(object):
                 else:
                     for attr in self.hostname_attr:
                         try:
-                            val =  row.object.attributes.get_dotted(attr)
-                            if val: # Don't ever give out '' or None, since it will error anyway
+                            val = row.object.attributes.get_dotted(attr)
+                            if (
+                                val
+                            ):  # Don't ever give out '' or None, since it will error anyway
                                 yield val
                                 break
                         except KeyError:
-                            pass # Move on to the next
+                            pass  # Move on to the next
                     else:
-                        raise ChefError('Cannot find a usable hostname attribute for node %s', row.object)
+                        raise ChefError(
+                            "Cannot find a usable hostname attribute for node %s",
+                            row.object,
+                        )
 
 
-def chef_roledefs(api=None, hostname_attr=DEFAULT_HOSTNAME_ATTR, environment=_default_environment):
+def chef_roledefs(
+    api=None, hostname_attr=DEFAULT_HOSTNAME_ATTR, environment=_default_environment
+):
     """Build a Fabric roledef dictionary from a Chef server.
 
     Example::
@@ -107,15 +116,17 @@ def chef_roledefs(api=None, hostname_attr=DEFAULT_HOSTNAME_ATTR, environment=_de
     """
     api = _api(api)
     if api.version_parsed < Environment.api_version_parsed and environment is not None:
-        raise ChefAPIVersionError('Environment support requires Chef API 0.10 or greater')
+        raise ChefAPIVersionError(
+            "Environment support requires Chef API 0.10 or greater"
+        )
     roledefs = {}
-    for row in Search('role', api=api):
-        name = row['name']
-        roledefs[name] =  Roledef('roles:%s' % name, api, hostname_attr, environment)
+    for row in Search("role", api=api):
+        name = row["name"]
+        roledefs[name] = Roledef("roles:%s" % name, api, hostname_attr, environment)
     return roledefs
 
 
-@task(alias=env.get('chef_environment_task_alias', 'env'))
+@task(alias=env.get("chef_environment_task_alias", "env"))
 def chef_environment(name, api=None):
     """A Fabric task to set the current Chef environment context.
 
@@ -141,15 +152,20 @@ def chef_environment(name, api=None):
 
     .. versionadded:: 0.2
     """
-    if env.get('chef_environment_validate', True):
+    if env.get("chef_environment_validate", True):
         api = _api(api)
         chef_env = Environment(name, api=api)
         if not chef_env.exists:
-            raise ChefError('Unknown Chef environment: %s' % name)
-    env['chef_environment'] = name
+            raise ChefError("Unknown Chef environment: %s" % name)
+    env["chef_environment"] = name
 
 
-def chef_query(query, api=None, hostname_attr=DEFAULT_HOSTNAME_ATTR, environment=_default_environment):
+def chef_query(
+    query,
+    api=None,
+    hostname_attr=DEFAULT_HOSTNAME_ATTR,
+    environment=_default_environment,
+):
     """A decorator to use an arbitrary Chef search query to find nodes to execute on.
 
     This is used like Fabric's ``roles()`` decorator, but accepts a Chef search query.
@@ -167,9 +183,13 @@ def chef_query(query, api=None, hostname_attr=DEFAULT_HOSTNAME_ATTR, environment
     """
     api = _api(api)
     if api.version_parsed < Environment.api_version_parsed and environment is not None:
-        raise ChefAPIVersionError('Environment support requires Chef API 0.10 or greater')
-    rolename = 'query_'+query
-    env.setdefault('roledefs', {})[rolename] = Roledef(query, api, hostname_attr, environment)
+        raise ChefAPIVersionError(
+            "Environment support requires Chef API 0.10 or greater"
+        )
+    rolename = "query_" + query
+    env.setdefault("roledefs", {})[rolename] = Roledef(
+        query, api, hostname_attr, environment
+    )
     return lambda fn: roles(rolename)(fn)
 
 
@@ -192,5 +212,5 @@ def chef_tags(*tags, **kwargs):
     # Allow passing a single iterable
     if len(tags) == 1 and not isinstance(tags[0], six.string_types):
         tags = tags[0]
-    query = ' AND '.join('tags:%s'%tag.strip() for tag in tags)
+    query = " AND ".join("tags:%s" % tag.strip() for tag in tags)
     return chef_query(query, **kwargs)

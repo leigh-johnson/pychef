@@ -1,5 +1,6 @@
 import os
 
+
 def walk_backwards(path):
     while 1:
         yield path
