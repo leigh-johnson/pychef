@@ -227,16 +227,6 @@ class ChefAPI(object):
     def __getitem__(self, path):
         return self.api_request('GET', path)
 
-# ~/.chef/config.d/
-# %userprofile%\.chef\config.d\
-DEFAULT_CONFIG_PATH = os.path.join(
-    str(Path.home()),
-    '.chef',
-    'config.d'
-)
-
-class MissingConfig(Exception):
-    pass
 def autoconfigure_v2():
     '''
         Re-uses Chef's configuration parsing & merging logic instead of reimplementing in Python :)
