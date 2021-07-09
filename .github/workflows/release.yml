@@ -21,8 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - uses: actions/checkout@v2
       - name: Init virtualenv
-        run: make .venv PYTHON_VERSION=3.8
+        run: make .venv PYTHON_VERSION=python3.8
       - name: Build source distribution & universal 3.x wheel
         run: make dist
       - name: Publish package
