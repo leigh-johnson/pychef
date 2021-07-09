@@ -3,7 +3,7 @@ import os
 import random
 from functools import wraps
 
-import mock
+from unittest import mock
 from unittest2 import TestCase, skipUnless
 
 from chef.api import ChefAPI

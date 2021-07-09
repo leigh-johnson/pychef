@@ -1,6 +1,6 @@
 import os
 
-import mock
+from unittest import mock
 import unittest2
 
 from chef.api import ChefAPI

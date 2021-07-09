@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from chef.fabric import chef_roledefs
 from chef.tests import ChefTestCase, mockSearch
